@@ -1,0 +1,38 @@
+name: Extraer metadatos de APKs
+
+on:
+  push:
+    paths:
+      - 'apks/*.apk'
+
+jobs:
+  apk-metadata:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Configurar entorno
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip default-jdk android-sdk aapt
+
+    - name: Extraer metadatos de APKs
+      run: |
+        mkdir -p metadata_apks
+        for apk in apks/*.apk; do
+          echo "Procesando $apk"
+          # Nombre del archivo
+          filename=$(basename "$apk")
+          # Hash SHA256
+          sha256sum "$apk" > metadata_apks/"$filename".hash.txt
+          # Metadatos con aapt
+          aapt dump badging "$apk" > metadata_apks/"$filename".meta.txt
+        done
+
+    - name: Guardar artefactos
+      uses: actions/upload-artifact@v3
+      with:
+        name: apk-metadata
+        path: metadata_apks/
